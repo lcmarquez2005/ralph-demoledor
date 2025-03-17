@@ -1,20 +1,23 @@
 class FallingObject {
-    constructor(canvasWidth, canvasHeight) {
+    constructor(canvasWidth, canvasHeight, imageSrc) {
         this.x = Math.random() * canvasWidth; // Posición aleatoria en X
-        this.y = -5; // Empieza fuera del canvas
-        this.radius = 5;
+        this.y = -50; // Empieza fuera del canvas (ajustado para la altura de la imagen)
         this.speed = Math.random() * 2 + 1; // Velocidad aleatoria entre 1 y 3
+        this.image = new Image(); // Crear una nueva imagen
+        this.image.src = imageSrc; // Asignar la ruta de la imagen PNG
+        this.width = 30; // Ancho de la imagen (ajustar según el tamaño de la imagen)
+        this.height = 30; // Alto de la imagen (ajustar según el tamaño de la imagen)
+        this.radius = 5
     }
 
     update() {
-        this.y += this.speed;
+        this.y += this.speed; // Mover el objeto hacia abajo
     }
 
     draw(ctx) {
-        ctx.fillStyle = "black";
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (this.image.complete) { // Asegurarse de que la imagen esté cargada
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        }
     }
 }
 class Game {
@@ -33,7 +36,7 @@ class Game {
 
         this.floors = [];
         this.fallingObjects = []; // Lista de objetos que caen
-        this.fallingProbability = 0.05; // Probabilidad de que un objeto caiga
+        this.fallingProbability = 0.02; // Probabilidad de que un objeto caiga
         this.init();
     }
 
@@ -88,7 +91,7 @@ class Game {
         this.manageFloors();
         
         if (Math.random() < this.fallingProbability) {
-            this.fallingObjects.push(new FallingObject(this.canvasWidth, this.canvasHeight));
+            this.fallingObjects.push(new FallingObject(this.canvasWidth, this.canvasHeight, "assets/brick.webp"));
         }
         
         this.fallingObjects = this.fallingObjects.filter(obj => {
