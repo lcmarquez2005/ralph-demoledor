@@ -17,14 +17,23 @@
 
 <body >
     
-    <canvas class="m-2 " id="gameCanvas"></canvas>
-    <div class="card">
-        <!-- <div class="card-header">Collision Detection</div> -->
-        <div id="counter-card" class="card-body">
-            <p>Luis Marquez</p>
-            <p id="score">Eliminados:</p>
-            <p id="lives">Eliminados:</p>
-        </div>
+    <canvas class=" " id="gameCanvas"></canvas>
+    <div class="card flex-column m-2" >
+            <div id="lives" class="d-flex flex-row justify-content-end">
+                <p class="mx-5">Vidas:</p>
+                <div class="mx-1">
+                    <img src="assets/heart.png" class="" alt="Imagen 1">
+                </div>
+                <div class="mx-1">
+                    <img src="assets/heart.png" class="" alt="Imagen 2">
+                </div>
+                <div class="mx-1">
+                    <img src="assets/heart.png" class="" alt="Imagen 3">
+                </div>
+            </div>
+            <p id="playerName">Luis Marquez</p>
+            <h3 id="score">Score: </h3>
+
     </div>
     <script src="https://cdn.jsdelivr.net/npm/gifler@0.1.0/gifler.min.js"></script>
 

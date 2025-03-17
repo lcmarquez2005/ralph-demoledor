@@ -22,21 +22,31 @@ class FallingObject {
 }
 class Game {
     constructor() {
+    
+        this.playerName = prompt("Introduce tu nombre: ");
+        if (this.playerName == null || this.playerName == "") {
+            window.location.reload();
+        } else {
+            alert("¡Hola " + this.playerName + "! ¡Bienvenido a Fix-It Felix!");
+            document.getElementById("playerName").innerText = `Jugador: ${this.playerName}`;
+        }
+        this.score = 0
         this.canvas = document.getElementById("gameCanvas");
+        this.scoreTag = document.getElementById("score");
         this.livesTag = document.getElementById("lives");
         this.ctx = this.canvas.getContext("2d");
         this.canvasWidth = 400;
+
         this.canvasHeight = 600;
-        this.canvas.width = this.canvasWidth;
+        this.canvas.width = this.canvasWidth* multiplier;
         this.canvas.height = this.canvasHeight;
         this.buildingOffset = 0;
         this.scrollSpeed = 0.5;
         this.lives = 3;
-        this.livesTag.textContent = "Te quedan: " + this.lives + " vidas";
 
         this.floors = [];
         this.fallingObjects = []; // Lista de objetos que caen
-        this.fallingProbability = 0.02; // Probabilidad de que un objeto caiga
+        this.fallingProbability = 0.05; // Probabilidad de que un objeto caiga
         this.init();
     }
 
@@ -64,20 +74,32 @@ class Game {
         const rect = this.canvas.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
         const clickY = event.clientY - rect.top;
-
+    
         this.floors.forEach(floor => {
             floor.windows.forEach(window => {
                 let adjustedY = window.y + this.buildingOffset;
+    
                 if (clickX >= window.x && clickX <= window.x + window.width &&
                     clickY >= adjustedY && clickY <= adjustedY + window.height) {
+    
                     if (window.broken) {
                         window.broken = false;
+                        window.disabled = true; // Bloquear temporalmente
+    
                         console.log("Ventana reparada en", window.x, adjustedY);
+                        this.score++;
+                        this.scoreTag.innerText = `Score: ${this.score}`;
+    
+                        // Reactivar la ventana tras 100ms (evita dobles clics accidentales)
+                        setTimeout(() => window.disabled = false, 100);
                     }
                 }
             });
         });
     }
+    
+    
+    
 
     update() {
         if (this.lives <= 0) {
@@ -117,6 +139,9 @@ class Game {
                 console.log("¡El círculo ha chocado con el cursor!");
                 this.lives -= 1;
                 alert("Has Perdido una Vida!\nVidas restantes:"+ this.lives);
+                if (this.livesTag && this.livesTag.lastElementChild) {
+                    this.livesTag.removeChild(this.livesTag.lastElementChild);
+                } 
                 this.fallingObjects.splice(index, 1); // Remove the circle after collision
             }
         });
@@ -160,7 +185,8 @@ class Game {
     draw() {
         this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         this.ctx.fillStyle = "#444";
-        this.ctx.fillRect(40, 0, this.canvasWidth - 80, this.canvasHeight);
+
+        this.ctx.fillRect(10, 0, this.canvasWidth+10 - (50*multiplier*2), this.canvasHeight);
         this.floors.forEach(floor => floor.draw(this.ctx, this.buildingOffset));
         this.ralph.draw(this.ctx);
         this.cursor.draw(this.ctx);
@@ -177,6 +203,42 @@ class Game {
     }
 
 }
+
+class DB {
+    constructor() {
+        this.firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(this.firebaseConfig);
+        this.db = firebase.firestore();
+    }
+
+    sendScoreToFirebase(playerName, score) {
+        this.db.collection("scores").add({
+            name: playerName,
+            score: score,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+            console.log("Puntaje guardado en Firebase");
+        })
+        .catch((error) => {
+            console.error("Error al guardar puntaje:", error);
+        });
+    }
+}
+
+// Uso:
+const database = new DB();
+// Llamar cuando el jugador pierde
+database.sendScoreToFirebase("Jugador1", 1200);
 
 class Cursor {
     constructor(canvas) {
@@ -247,14 +309,15 @@ class Ralph {
         }
     }
 }
-
+multiplier= 0.90
+window_width = 45   *(multiplier);
 
 class Floor {
     static floorHeight = 80;
     static windowsPerFloor = 4;
-    static windowWidth = 50;
-    static windowHeight = 50;
-    static windowSpacing = 33;
+    static windowWidth = window_width;
+    static windowHeight = window_width;
+    static windowSpacing = 33* multiplier;
     static brokenWindowChance = 0.3;
 
     constructor(y, windows = null) {
@@ -270,10 +333,10 @@ class Floor {
         const windows = [];
         for (let i = 0; i < Floor.windowsPerFloor; i++) {
             windows.push({
-                x: 50 + i * (Floor.windowWidth + Floor.windowSpacing),
+                x: 50*multiplier + i * (Floor.windowWidth + Floor.windowSpacing),
                 y: this.y,
-                width: Floor.windowWidth,
-                height: Floor.windowHeight,
+                width: Floor.windowWidth* multiplier,
+                height: Floor.windowHeight *multiplier,
                 broken: Math.random() < Floor.brokenWindowChance
             });
         }
