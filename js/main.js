@@ -54,6 +54,7 @@ class Game {
         this.fallingObjects = []; // Lista de objetos que caen
         this.fallingProbability = 0.00; // Probabilidad de que un objeto caiga
         this.init();
+        this.collisionCooldown = false;
     }
 
     init() {
@@ -136,35 +137,69 @@ class Game {
         
         this.checkCollisions();
     }
+
     checkCollisions() {
+        if (this.collisionCooldown) return;  // Si el temporizador está activado, no detectar colisiones
+
+        // Obtener las posiciones y tamaños de Ralph con el ajuste de 30px a la derecha
+        const ralphX = this.ralph.x + 30;  // Desplazamos la colisión 30px a la derecha
+        const ralphY = this.ralph.y;
+        const ralphWidth = this.ralph.collisionWidth;  // Usamos el área de colisión ajustada
+        const ralphHeight = this.ralph.collisionHeight;  // Usamos el área de colisión ajustada
+
+        // Obtener las posiciones del cursor
+        const cursorX = this.cursor.x;
+        const cursorY = this.cursor.y;
+        const cursorWidth = this.cursor.width;
+        const cursorHeight = this.cursor.height;
+
+        // Verificar si hay colisión entre el cursor y el área de colisión de Ralph
+        if (cursorX < ralphX + ralphWidth &&
+            cursorX + cursorWidth > ralphX &&
+            cursorY < ralphY + ralphHeight &&
+            cursorY + cursorHeight > ralphY) {
+            console.log("¡El cursor ha chocado con Ralph!");
+            this.lives -= 1;
+            alert("Has Perdido una Vida!\nVidas restantes: " + this.lives);
+
+            // Actualizar la UI de vidas restantes
+            if (this.livesTag && this.livesTag.lastElementChild) {
+                this.livesTag.removeChild(this.livesTag.lastElementChild);
+                this.cursor.x = 150;  // Reiniciar posición del cursor
+                this.cursor.y = 500;
+            }
+
+            // Activar el temporizador de cooldown
+            this.collisionCooldown = true;
+
+            // Desactivar el temporizador después de 200ms
+            setTimeout(() => {
+                this.collisionCooldown = false;  // Restaurar la detección de colisiones
+            }, 200);
+        }
+
+        // Comprobar las colisiones con los objetos que caen
         this.fallingObjects.forEach((obj, index) => {
-            // Find the closest point on the rectangle to the circle's center
-            const closestX = Math.max(this.cursor.x, Math.min(obj.x , this.cursor.x + this.cursor.width-10));
-            const closestY = Math.max(this.cursor.y, Math.min(obj.y, this.cursor.y + this.cursor.height));
-    
-            // Calculate the distance between the circle's center and the closest point on the rectangle
+            const closestX = Math.max(cursorX, Math.min(obj.x, cursorX + cursorWidth - 10));
+            const closestY = Math.max(cursorY, Math.min(obj.y, cursorY + cursorHeight));
+
             const distanceX = obj.x - closestX;
             const distanceY = obj.y - closestY;
             const distanceSquared = distanceX * distanceX + distanceY * distanceY;
-    
-            // Check if the distance is less than or equal to the circle's radius
+
             if (distanceSquared <= obj.radius * obj.radius) {
                 console.log("¡El círculo ha chocado con el cursor!");
                 this.lives -= 1;
-                alert("Has Perdido una Vida!\nVidas restantes:"+ this.lives);
+                alert("Has Perdido una Vida!\nVidas restantes: " + this.lives);
                 if (this.livesTag && this.livesTag.lastElementChild) {
                     this.livesTag.removeChild(this.livesTag.lastElementChild);
-                } 
-                this.fallingObjects.splice(index, 1); // Remove the circle after collision
+                }
+                this.fallingObjects.splice(index, 1); // Remove the object after collision
             }
         });
-    
-        // Check if the player has run out of lives
-        if (this.lives <= 0) {
-            console.log("¡Juego terminado! Felix ha perdido todas sus vidas.");
-            // You might want to trigger a game over state here
-        }
     }
+    
+    
 
 
     manageFloors() {
@@ -344,6 +379,8 @@ class Ralph {
         this.ghostCanvas.width = this.width;
         this.ghostCanvas.height = this.height;
         this.ghostCtx = this.ghostCanvas.getContext('2d');
+        this.collisionWidth = this.width - 90;  // Ajustar el área de colisión
+        this.collisionHeight = this.height - 30;  // Ajustar el área de colisión
 
         this.gif = null;
         gifler("assets/ralph gif.gif").get((anim) => {
