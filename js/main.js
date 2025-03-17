@@ -1,7 +1,7 @@
 class FallingObject {
-    constructor(canvasWidth, canvasHeight, imageSrc) {
-        this.x = Math.random() * canvasWidth; // Posición aleatoria en X
-        this.y = -50; // Empieza fuera del canvas (ajustado para la altura de la imagen)
+    constructor(posicionX, posicionY, imageSrc) {
+        this.x = posicionX+40; // Posición aleatoria en X
+        this.y = posicionY+60; // Empieza fuera del canvas (ajustado para la altura de la imagen)
         this.speed = Math.random() * 2 + 1; // Velocidad aleatoria entre 1 y 3
         this.image = new Image(); // Crear una nueva imagen
         this.image.src = imageSrc; // Asignar la ruta de la imagen PNG
@@ -91,7 +91,7 @@ class Game {
         this.manageFloors();
         
         if (Math.random() < this.fallingProbability) {
-            this.fallingObjects.push(new FallingObject(this.canvasWidth, this.canvasHeight, "assets/brick.webp"));
+            this.fallingObjects.push(new FallingObject(this.ralph.x, this.ralph.y, "assets/brick.webp"));
         }
         
         this.fallingObjects = this.fallingObjects.filter(obj => {
@@ -209,6 +209,8 @@ class Cursor {
 
 
 class Ralph {
+    static x = 0;
+
     constructor(canvasWidth, canvasHeight) {
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
@@ -258,6 +260,10 @@ class Floor {
     constructor(y, windows = null) {
         this.y = y;
         this.windows = windows || this.generateWindows();
+        this.windowImage = new Image(); // Image for normal windows
+        this.windowImage.src = "assets/window.png"; // Path to normal window PNG
+        this.brokenWindowImage = new Image(); // Image for broken windows
+        this.brokenWindowImage.src = "assets/broken-window2.png"; // Path to broken window PNG
     }
 
     generateWindows() {
@@ -276,8 +282,14 @@ class Floor {
 
     draw(ctx, buildingOffset) {
         this.windows.forEach(win => {
-            ctx.fillStyle = win.broken ? "red" : "blue";
-            ctx.fillRect(win.x, this.y + buildingOffset, win.width, win.height);
+            const image = win.broken ? this.brokenWindowImage : this.windowImage;
+            if (image.complete) { // Ensure the image is loaded before drawing
+                ctx.drawImage(image, win.x, this.y + buildingOffset, win.width, win.height);
+            } else {
+                // Fallback: Draw a colored rectangle if the image isn't loaded yet
+                ctx.fillStyle = win.broken ? "red" : "blue";
+                ctx.fillRect(win.x, this.y + buildingOffset, win.width, win.height);
+            }
         });
     }
 }
