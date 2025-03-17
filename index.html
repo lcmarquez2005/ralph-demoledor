@@ -6,38 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POO con Canvas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
-    <style>
-
-    </style>
-    
-    
-    
 </head>
 
-<body >
-    
-    <canvas class=" " id="gameCanvas"></canvas>
-    <div class="card flex-column m-2" >
-            <div id="lives" class="d-flex flex-row justify-content-end">
-                <p class="mx-5">Vidas:</p>
-                <div class="mx-1">
-                    <img src="assets/heart.png" class="" alt="Imagen 1">
-                </div>
-                <div class="mx-1">
-                    <img src="assets/heart.png" class="" alt="Imagen 2">
-                </div>
-                <div class="mx-1">
-                    <img src="assets/heart.png" class="" alt="Imagen 3">
+<body class="bg-dark text-white">
+
+    <div class="container my-1">
+        <!-- Card para el jugador y su puntaje -->
+        <div class="card p-1 my-2 shadow-lg">
+            <h2 class="text-center">Fix-It Felix</h2>
+
+        </div>
+
+        <!-- Canvas para el juego -->
+        <div class="d-flex justify-content-center mb-2">
+            <canvas id="gameCanvas" width="400" height="600" class="border border-light position-relative"></canvas>
+            <!-- Llamada al div con las vidas en la esquina inferior derecha -->
+            <div id="lives" class="d-flex justify-content-end align-items-center position-absolute bottom-0 end-0 m-3">
+                <img src="assets/heart.png" class="mx-1" alt="Corazón 1" width="30">
+                <img src="assets/heart.png" class="mx-1" alt="Corazón 2" width="30">
+                <img src="assets/heart.png" class="mx-1" alt="Corazón 3" width="30">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <!-- Información del jugador -->
+                <div id="player-info" class="d-flex flex-column align-items-start">
+                    <h5 id="playerName" class="my-0">Jugador: User</h5>
+                    <div id="score" class="h5 my-0">Score: 0</div>
                 </div>
             </div>
-            <p id="playerName">Luis Marquez</p>
-            <h3 id="score">Score: </h3>
-
+            <div class="col-md-6 text-end">
+                <!-- Puedes eliminar el contenedor de vidas aquí, se moverá al canvas -->
+            </div>
+        </div>
+        <!-- Sección de los mejores puntajes -->
+        <div id="top-scores" class="card p-4 shadow-lg">
+            <h3 class="card-title text-center">Mejores Puntajes</h3>
+            <div id="score-list" class="list-group mt-3">
+                <!-- Los puntajes se agregarán aquí dinámicamente -->
+            </div>
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/gifler@0.1.0/gifler.min.js"></script>
 
-    <script src="js/main.js"></script>
+    <!-- Librerías externas -->
+    <script src="https://cdn.jsdelivr.net/npm/gifler@0.1.0/gifler.min.js"></script>
+    <script type="module" src="js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

@@ -1,3 +1,9 @@
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+
 class FallingObject {
     constructor(posicionX, posicionY, imageSrc) {
         this.x = posicionX+40; // Posición aleatoria en X
@@ -46,7 +52,7 @@ class Game {
 
         this.floors = [];
         this.fallingObjects = []; // Lista de objetos que caen
-        this.fallingProbability = 0.05; // Probabilidad de que un objeto caiga
+        this.fallingProbability = 0.00; // Probabilidad de que un objeto caiga
         this.init();
     }
 
@@ -103,11 +109,18 @@ class Game {
 
     update() {
         if (this.lives <= 0) {
-            if (confirm("Game Over. ¿Quieres reiniciar?")) {
+            console.log("¡Juego terminado! Guardando puntaje...");
+            alert("Game Over. ¿Quieres reiniciar?")
+            database.sendScoreToFirebase(this.playerName, this.score).then(() => {
+                console.log("Puntaje guardado exitosamente.");
                 location.reload();
             }
-            exit;
+        );
+        exit;
+            
+            
         }
+        
         this.buildingOffset += this.scrollSpeed;
         this.ralph.update();
         this.manageFloors();
@@ -203,43 +216,86 @@ class Game {
     }
 
 }
-
 class DB {
     constructor() {
         this.firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+            apiKey: "AIzaSyCcG53GogS5OKe-L4y_jgge7ni9bW7LTQo",
+            authDomain: "wreck-it-ralph-ada75.firebaseapp.com",
+            databaseURL: "https://wreck-it-ralph-ada75-default-rtdb.firebaseio.com",
+            projectId: "wreck-it-ralph-ada75",
+            storageBucket: "wreck-it-ralph-ada75.firebasestorage.app",
+            messagingSenderId: "13262546710",
+            appId: "1:13262546710:web:b1f77828e41c75bb0b9237",
+            measurementId: "G-8K52T8JZW4"
         };
 
         // Inicializar Firebase
-        firebase.initializeApp(this.firebaseConfig);
-        this.db = firebase.firestore();
+        this.app = initializeApp(this.firebaseConfig);
+        this.db = getFirestore(this.app);
     }
 
-    sendScoreToFirebase(playerName, score) {
-        this.db.collection("scores").add({
-            name: playerName,
-            score: score,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
+    async sendScoreToFirebase(playerName, score) {
+        try {
+            await addDoc(collection(this.db, "scores"), {
+                name: playerName,
+                score: score,
+                timestamp: serverTimestamp()
+            });
             console.log("Puntaje guardado en Firebase");
-        })
-        .catch((error) => {
+        } catch (error) {
             console.error("Error al guardar puntaje:", error);
-        });
+        }
+    }
+    async getTopScores(limitCount = 5) {
+        try {
+            // Crear una consulta para obtener los puntajes ordenados de mayor a menor
+            const q = query(
+                collection(this.db, "scores"),
+                orderBy("score", "desc"),
+                limit(limitCount)  // Limitar a los mejores "limitCount" puntajes
+            );
+
+            // Obtener los documentos de la consulta
+            const querySnapshot = await getDocs(q);
+
+            // Crear un array con los puntajes y los nombres
+            let topScores = [];
+            querySnapshot.forEach((doc) => {
+                topScores.push({
+                    name: doc.data().name,
+                    score: doc.data().score,
+                    timestamp: doc.data().timestamp
+                });
+            });
+
+            // Mostrar los puntajes en consola o realizar otras acciones
+            console.log("Top Scores:", topScores);
+
+            // Aquí puedes hacer algo con los datos, como mostrarlos en un HTML
+            return topScores;
+        } catch (error) {
+            console.error("Error al obtener los mejores puntajes:", error);
+        }
     }
 }
-
-// Uso:
 const database = new DB();
-// Llamar cuando el jugador pierde
-database.sendScoreToFirebase("Jugador1", 1200);
 
+
+// Llamar a la función para obtener los mejores puntajes
+database.getTopScores().then(topScores => {
+    // Crear un string de HTML para mostrar los puntajes
+    let scoresHtml = "<h3>Top Scores</h3>";
+    topScores.forEach((score, index) => {
+        scoresHtml += `
+            <p>Rank ${index + 1}: ${score.name} - ${score.score} puntos</p>
+        `;
+    });
+
+    // Mostrar los puntajes en el div con id 'top-scores'
+    document.getElementById("top-scores").innerHTML = scoresHtml;
+});
+
+// **Ejemplo de uso**:
 class Cursor {
     constructor(canvas) {
         this.canvas = canvas;
@@ -309,8 +365,8 @@ class Ralph {
         }
     }
 }
-multiplier= 0.90
-window_width = 45   *(multiplier);
+let multiplier= 0.90
+let window_width = 45   *(multiplier);
 
 class Floor {
     static floorHeight = 80;
