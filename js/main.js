@@ -1,6 +1,26 @@
+class FallingObject {
+    constructor(canvasWidth, canvasHeight) {
+        this.x = Math.random() * canvasWidth; // Posición aleatoria en X
+        this.y = -5; // Empieza fuera del canvas
+        this.radius = 5;
+        this.speed = Math.random() * 2 + 1; // Velocidad aleatoria entre 1 y 3
+    }
+
+    update() {
+        this.y += this.speed;
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
 class Game {
     constructor() {
         this.canvas = document.getElementById("gameCanvas");
+        this.livesTag = document.getElementById("lives");
         this.ctx = this.canvas.getContext("2d");
         this.canvasWidth = 400;
         this.canvasHeight = 600;
@@ -9,7 +29,11 @@ class Game {
         this.buildingOffset = 0;
         this.scrollSpeed = 0.5;
         this.lives = 3;
+        this.livesTag.textContent = "Te quedan: " + this.lives + " vidas";
+
         this.floors = [];
+        this.fallingObjects = []; // Lista de objetos que caen
+        this.fallingProbability = 0.05; // Probabilidad de que un objeto caiga
         this.init();
     }
 
@@ -53,10 +77,55 @@ class Game {
     }
 
     update() {
+        if (this.lives <= 0) {
+            if (confirm("Game Over. ¿Quieres reiniciar?")) {
+                location.reload();
+            }
+            exit;
+        }
         this.buildingOffset += this.scrollSpeed;
         this.ralph.update();
         this.manageFloors();
+        
+        if (Math.random() < this.fallingProbability) {
+            this.fallingObjects.push(new FallingObject(this.canvasWidth, this.canvasHeight));
+        }
+        
+        this.fallingObjects = this.fallingObjects.filter(obj => {
+            obj.update();
+            return obj.y < this.canvasHeight;
+        });
+        
+        this.checkCollisions();
     }
+    checkCollisions() {
+        this.fallingObjects.forEach((obj, index) => {
+            // Find the closest point on the rectangle to the circle's center
+            const closestX = Math.max(this.cursor.x, Math.min(obj.x , this.cursor.x + this.cursor.width-10));
+            const closestY = Math.max(this.cursor.y, Math.min(obj.y, this.cursor.y + this.cursor.height));
+    
+            // Calculate the distance between the circle's center and the closest point on the rectangle
+            const distanceX = obj.x - closestX;
+            const distanceY = obj.y - closestY;
+            const distanceSquared = distanceX * distanceX + distanceY * distanceY;
+    
+            // Check if the distance is less than or equal to the circle's radius
+            if (distanceSquared <= obj.radius * obj.radius) {
+                console.log("¡El círculo ha chocado con el cursor!");
+                this.lives -= 1;
+                alert("Has Perdido una Vida!\nVidas restantes:"+ this.lives);
+                this.fallingObjects.splice(index, 1); // Remove the circle after collision
+            }
+        });
+    
+        // Check if the player has run out of lives
+        if (this.lives <= 0) {
+            console.log("¡Juego terminado! Felix ha perdido todas sus vidas.");
+            // You might want to trigger a game over state here
+        }
+    }
+
+
     manageFloors() {
         // Remove floors that have scrolled out of view
         while (this.floors.length > 0 && this.floors[this.floors.length - 1].y + this.buildingOffset >= this.canvasHeight) {
@@ -69,12 +138,6 @@ class Game {
             this.floors.unshift(new Floor(newY));
         }
     }
-    
-    
-    
-    
-    
-    
     
     generateFloor(y) {
         const windows = [];
@@ -98,6 +161,7 @@ class Game {
         this.floors.forEach(floor => floor.draw(this.ctx, this.buildingOffset));
         this.ralph.draw(this.ctx);
         this.cursor.draw(this.ctx);
+        this.fallingObjects.forEach(obj => obj.draw(this.ctx));
     }
 
     startGame() {
@@ -108,47 +172,61 @@ class Game {
         };
         gameLoop();
     }
+
 }
 
 class Cursor {
     constructor(canvas) {
         this.canvas = canvas;
-        this.x = 0;
-        this.y = 0;
+        this.x = 200;
+        this.y = 500;
+        this.width = 64;
+        this.height = 64;
         this.img = new Image();
         this.img.src = "assets/felix.png";
+
+        // Agregar el event listener para actualizar la posición del cursor
+        canvas.addEventListener('mousemove', this.updatePosition.bind(this));
     }
 
     updatePosition(event) {
         const rect = this.canvas.getBoundingClientRect();
-        this.x = event.clientX - rect.left;
-        this.y = event.clientY - rect.top;
+        // Actualizar inmediatamente la posición del cursor
+        this.x = event.clientX - rect.left - this.width / 2;
+        this.y = event.clientY - rect.top - this.height / 2;
     }
 
     draw(ctx) {
         if (this.img.complete) {
-            ctx.drawImage(this.img, this.x - 32, this.y - 32, 90, 90);
+            ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
         }
     }
 }
+
+
 
 class Ralph {
     constructor(canvasWidth, canvasHeight) {
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
-        this.x = 0;
+        this.x = 100;
         this.y = 0;
-        this.width = 64;
+        this.width = 128;
         this.height = 128;
-        this.speed =2;
+        this.speed = 2;
         this.direction = 1;
-        this.jumpHeight = 20;
-        this.jumpSpeed = 0.2;
-        this.jumping = true;
-        this.velocityY = 1;
-        this.gravity = 0.05;
-        this.img = new Image();
-        this.img.src = "assets/felix.png";
+        
+        // Crear un canvas interno para dibujar el GIF
+        this.ghostCanvas = document.createElement('canvas');
+        this.ghostCanvas.width = this.width;
+        this.ghostCanvas.height = this.height;
+        this.ghostCtx = this.ghostCanvas.getContext('2d');
+
+        this.gif = null;
+        gifler("assets/ralph gif.gif").get((anim) => {
+            this.gif = anim;
+            this.gif.animateInCanvas(this.ghostCanvas);
+        });
     }
 
     update() {
@@ -156,23 +234,15 @@ class Ralph {
         if (this.x + this.width > this.canvasWidth || this.x < 0) {
             this.direction = -this.direction;
         }
-        if (this.jumping) {
-            this.velocityY -= this.gravity;
-            this.y += this.velocityY;
-            if (this.y >= 0) {
-                this.y = 0;
-                this.velocityY = 0;
-            }
-            if (this.y === 0) {
-                this.velocityY = this.jumpHeight;
-            }
-        }
     }
 
     draw(ctx) {
-        ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+        if (this.gif) {
+            ctx.drawImage(this.ghostCanvas, this.x, this.y, this.width, this.height);
+        }
     }
 }
+
 
 class Floor {
     static floorHeight = 80;
