@@ -104,9 +104,6 @@ class Game {
             });
         });
     }
-    
-    
-    
 
     update() {
         if (this.lives <= 0) {
@@ -117,9 +114,7 @@ class Game {
                 location.reload();
             }
         );
-        exit;
-            
-            
+        exit;      
         }
         
         this.buildingOffset += this.scrollSpeed;
@@ -136,6 +131,7 @@ class Game {
         });
         
         this.checkCollisions();
+        this.dificultad();
     }
 
     checkCollisions() {
@@ -198,6 +194,18 @@ class Game {
             }
         });
     }
+    
+    dificultad() {
+        // Ajuste gradual de la probabilidad de caída
+        this.fallingProbability = Math.min(0.003 + this.score / 50000, 0.1); // Aumenta lentamente la probabilidad hasta un máximo de 0.1
+        
+        // Ajuste gradual de la velocidad de desplazamiento
+        this.scrollSpeed = Math.min(1.5, 0.3+  this.score / 100); // Reduce lentamente la velocidad a medida que aumenta la puntuación, pero no por debajo de 0.5
+        console.log(this.scrollSpeed, this.fallingProbability)
+    }
+    
+    
+    
     
     
 
