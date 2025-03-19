@@ -138,10 +138,28 @@ class Game {
             console.log("¡Juego terminado! Guardando puntaje...");
             gameMusic.pause(); // Detener la música de fondo
             gameOverMusic.play(); // Reproducir música de derrota
-            alert("Game Over. ¿Quieres reiniciar?")
+
             database.sendScoreToFirebase(this.playerName, this.score).then(() => {
-                console.log("Puntaje guardado exitosamente.");
-                location.reload();
+                Swal.fire({
+                    icon: "error",
+                    title: "¡Game Over! 🎮",
+                    html: `
+                        <p>Tu puntaje de <strong>${this.score}</strong> ha sido registrado correctamente. 🏆</p>
+                        <p>¿Quieres intentarlo de nuevo?</p>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: "🔁 Reiniciar",
+                    cancelButtonText: "❌ Salir",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload(); // Reinicia el juego si elige reiniciar
+                    } else {
+
+                        }
+                });
+
             }
         );
         exit;      
@@ -189,8 +207,18 @@ class Game {
             crashMusic.play(); // Reproducir sonido de choque
 
             this.lives -= 1;
-            alert("Has Perdido una Vida!\nVidas restantes: " + this.lives);
-
+            Swal.fire({
+                icon: "warning",
+                title: "¡Has Perdido una Vida! 😢\nMuevete o Perderas otra!",
+                text: `Vidas restantes: ${this.lives}`,
+                toast: true,
+                position: "top-end", // Otras opciones: 'bottom-end', 'top-start'
+                showConfirmButton: false,
+                timer: 1500, // Se cierra automáticamente después de 1.5 segundos
+                timerProgressBar: true,
+            });
+            
+            
             // Actualizar la UI de vidas restantes
             if (this.livesTag && this.livesTag.lastElementChild) {
                 this.livesTag.removeChild(this.livesTag.lastElementChild);
@@ -204,7 +232,7 @@ class Game {
             // Desactivar el temporizador después de 200ms
             setTimeout(() => {
                 this.collisionCooldown = false;  // Restaurar la detección de colisiones
-            }, 200);
+            }, 1500);
         }
 
         // Comprobar las colisiones con los objetos que caen
@@ -222,7 +250,17 @@ class Game {
                 crashMusic.play(); // Reproducir sonido de choque
     
                 this.lives -= 1;
-                alert("Has Perdido una Vida!\nVidas restantes: " + this.lives);
+                Swal.fire({
+                    icon: "warning",
+                    title: "¡Has Perdido una Vida! 😢\nMuevete o Perderas otra!",
+                    text: `Vidas restantes: ${this.lives}`,
+                    toast: true,
+                    position: "top-end", // Otras opciones: 'bottom-end', 'top-start'
+                    showConfirmButton: false,
+                    timer: 1500, // Se cierra automáticamente después de 1.5 segundos
+                    timerProgressBar: true,
+                });
+                
                 if (this.livesTag && this.livesTag.lastElementChild) {
                     this.livesTag.removeChild(this.livesTag.lastElementChild);
                 }
