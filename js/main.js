@@ -2,6 +2,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 import { getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+const gameMusic = new Audio('assets/gameMusic.mp3');
+const fixMusic = new Audio('assets/fixMusic.mp3');
+const crashMusic = new Audio('assets/crashMusic.mp3');
+const gameOverMusic = new Audio('assets/gameOver.mp3');
+
+gameMusic.loop = true; // Repetir la música de fondo
 
 
 class FallingObject {
@@ -29,22 +35,17 @@ class FallingObject {
 class Game {
     constructor() {
     
-        this.playerName = prompt("Introduce tu nombre: ");
-        if (this.playerName == null || this.playerName == "") {
-            window.location.reload();
-        } else {
-            alert("¡Hola " + this.playerName + "! ¡Bienvenido a Fix-It Felix!");
-            document.getElementById("playerName").innerText = `Jugador: ${this.playerName}`;
-        }
+        this.playerName;
+
         this.score = 0
         this.canvas = document.getElementById("gameCanvas");
         this.scoreTag = document.getElementById("score");
         this.livesTag = document.getElementById("lives");
         this.ctx = this.canvas.getContext("2d");
-        this.canvasWidth = 400;
+        this.canvasWidth = 420;
 
         this.canvasHeight = 600;
-        this.canvas.width = this.canvasWidth* multiplier;
+        this.canvas.width = this.canvasWidth-50;
         this.canvas.height = this.canvasHeight;
         this.buildingOffset = 0;
         this.scrollSpeed = 0.5;
@@ -62,8 +63,32 @@ class Game {
         this.ralph = new Ralph(this.canvasWidth, this.canvasHeight);
         this.generateInitialFloors();
         this.setupEventListeners();
-        this.startGame();
+        this.askPlayerName();
     }
+    showGameIntro() {
+        Swal.fire({
+            title: "¡Bienvenido a Fix-It Felix!",
+            html: `
+                <p>¡Hola ${this.playerName}! 👋</p>
+                <p><strong>¿En qué consiste el juego?</strong></p>
+                <ul style="text-align: left;">
+                    <li>🔨 Debes reparar las ventanas rotas haciendo clic en ellas.</li>
+                    <li>🏚️ Ralph tratará de impedirlo lanzando bloques desde arriba.</li>
+                    <li>💀 Evita los bloques que caen, o perderás una vida.</li>
+                    <li>❤️ Tienes <strong>3 vidas</strong>. Si las pierdes, ¡el juego termina!</li>
+                    <li>🚀 A medida que subes de nivel, el juego se vuelve más rápido y difícil.</li>
+                </ul>
+                <p>🎯 <strong>Objetivo:</strong> ¡Repara tantas ventanas como puedas y consigue el mejor puntaje!</p>
+                <p>🎮 ¡Buena suerte!</p>
+            `,
+            confirmButtonText: "¡Comenzar!",
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then(() => {
+            this.startGame(); // Inicia el juego después de la presentación
+        });
+    }
+    
 
     generateInitialFloors() {
         for (let i = 0; i < Math.ceil(this.canvasHeight / Floor.floorHeight) + 2; i++) {
@@ -89,10 +114,13 @@ class Game {
                 if (clickX >= window.x && clickX <= window.x + window.width &&
                     clickY >= adjustedY && clickY <= adjustedY + window.height) {
     
+                        
                     if (window.broken) {
                         window.broken = false;
                         window.disabled = true; // Bloquear temporalmente
-    
+                        fixMusic.currentTime = 0; // Reinicia el audio antes de reproducirlo
+                        fixMusic.play(); // Reproducir sonido de reparación
+                            
                         console.log("Ventana reparada en", window.x, adjustedY);
                         this.score++;
                         this.scoreTag.innerText = `Score: ${this.score}`;
@@ -108,6 +136,8 @@ class Game {
     update() {
         if (this.lives <= 0) {
             console.log("¡Juego terminado! Guardando puntaje...");
+            gameMusic.pause(); // Detener la música de fondo
+            gameOverMusic.play(); // Reproducir música de derrota
             alert("Game Over. ¿Quieres reiniciar?")
             database.sendScoreToFirebase(this.playerName, this.score).then(() => {
                 console.log("Puntaje guardado exitosamente.");
@@ -155,6 +185,9 @@ class Game {
             cursorY < ralphY + ralphHeight &&
             cursorY + cursorHeight > ralphY) {
             console.log("¡El cursor ha chocado con Ralph!");
+            crashMusic.currentTime = 0; // Reinicia el audio antes de reproducirlo
+            crashMusic.play(); // Reproducir sonido de choque
+
             this.lives -= 1;
             alert("Has Perdido una Vida!\nVidas restantes: " + this.lives);
 
@@ -185,6 +218,9 @@ class Game {
 
             if (distanceSquared <= obj.radius * obj.radius) {
                 console.log("¡El círculo ha chocado con el cursor!");
+                crashMusic.currentTime = 0; // Reinicia el audio antes de reproducirlo
+                crashMusic.play(); // Reproducir sonido de choque
+    
                 this.lives -= 1;
                 alert("Has Perdido una Vida!\nVidas restantes: " + this.lives);
                 if (this.livesTag && this.livesTag.lastElementChild) {
@@ -197,10 +233,10 @@ class Game {
     
     dificultad() {
         // Ajuste gradual de la probabilidad de caída
-        this.fallingProbability = Math.min(0.003 + this.score / 50000, 0.1); // Aumenta lentamente la probabilidad hasta un máximo de 0.1
+        this.fallingProbability = Math.min(0.003 + this.score / 5000, 0.1); // Aumenta lentamente la probabilidad hasta un máximo de 0.1
         
         // Ajuste gradual de la velocidad de desplazamiento
-        this.scrollSpeed = Math.min(1.5, 0.3+  this.score / 100); // Reduce lentamente la velocidad a medida que aumenta la puntuación, pero no por debajo de 0.5
+        this.scrollSpeed = Math.min(1.5, 0.5+  this.score / 50); // Reduce lentamente la velocidad a medida que aumenta la puntuación, pero no por debajo de 0.5
         console.log(this.scrollSpeed, this.fallingProbability)
     }
     
@@ -250,6 +286,9 @@ class Game {
     }
 
     startGame() {
+        gameMusic.play()
+
+
         const gameLoop = () => {
             this.update();
             this.draw();
@@ -257,8 +296,32 @@ class Game {
         };
         gameLoop();
     }
+    askPlayerName() {
+        Swal.fire({
+            title: "¡Bienvenido a Fix-It Felix! 🎮",
+            input: "text",
+            inputPlaceholder: "Introduce tu nombre",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            inputValidator: (value) => {
+                if (!value) {
+                    return "⚠️ Por favor, introduce tu nombre para continuar.";
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value.trim() !== "") {
+                this.playerName = result.value.trim();
+                document.getElementById("playerName").innerText = `Jugador: ${this.playerName}`;
+                this.showGameIntro(); // Llamar a la presentación del juego después
+            } else {
+                window.location.reload(); // Recargar si no introduce un nombre
+            }
+        });
+    }
+    
 
 }
+
 class DB {
     constructor() {
         this.firebaseConfig = {
@@ -410,7 +473,7 @@ class Ralph {
         }
     }
 }
-let multiplier= 0.90
+let multiplier= 1
 let window_width = 45   *(multiplier);
 
 class Floor {
@@ -418,7 +481,7 @@ class Floor {
     static windowsPerFloor = 4;
     static windowWidth = window_width;
     static windowHeight = window_width;
-    static windowSpacing = 33* multiplier;
+    static windowSpacing = 28;
     static brokenWindowChance = 0.3;
 
     constructor(y, windows = null) {
@@ -434,7 +497,7 @@ class Floor {
         const windows = [];
         for (let i = 0; i < Floor.windowsPerFloor; i++) {
             windows.push({
-                x: 50*multiplier + i * (Floor.windowWidth + Floor.windowSpacing),
+                x: 40*multiplier + i * (Floor.windowWidth + Floor.windowSpacing),
                 y: this.y,
                 width: Floor.windowWidth* multiplier,
                 height: Floor.windowHeight *multiplier,
