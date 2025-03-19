@@ -66,6 +66,7 @@ class Game {
         this.askPlayerName();
     }
     showGameIntro() {
+       
         Swal.fire({
             title: "¡Bienvenido a Fix-It Felix!",
             html: `
@@ -85,7 +86,52 @@ class Game {
             allowOutsideClick: false,
             allowEscapeKey: false
         }).then(() => {
+            this.showFullscreenPrompt(); // Pregunta si quiere jugar a pantalla completa
+        });
+    }
+    
+    showFullscreenPrompt() {
+        Swal.fire({
+            title: "¿Quieres jugar en pantalla completa? 🎮",
+            text: "¡Disfrutarás mejor la experiencia si juegas a pantalla completa!",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Sí, activar",
+            cancelButtonText: "No, gracias",
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
             this.startGame(); // Inicia el juego después de la presentación
+
+            if (result.isConfirmed) {
+                const element = document.documentElement;
+                if (element.requestFullscreen) {
+                    element.requestFullscreen();
+                } else if (element.mozRequestFullScreen) {
+                    element.mozRequestFullScreen(); // Firefox
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen(); // Chrome, Safari, Opera
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen(); // IE/Edge
+                }
+                Swal.fire({
+                    icon: "success",
+                    title: "¡Pantalla completa activada! 🚀",
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                Swal.fire({
+                    icon: "info",
+                    title: "Jugando en modo normal 😊",
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }
         });
     }
     
